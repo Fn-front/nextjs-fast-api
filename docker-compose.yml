@@ -1,19 +1,23 @@
 version: '3.8'
 
 services:
-  app:
-    container_name: nextjs-fast-api
   backend:
-    build: ./backend
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nextjs-fast-api-backend
     ports:
       - "8000:8000"
     depends_on:
       - db
     environment:
       - DATABASE_URL=mysql://user:password@db/login_db
+    volumes:
+      - ./backend:/backend
 
   frontend:
     build: ./frontend
+    container_name: nextjs-fast-api-frontend
     ports:
       - "3000:3000"
     depends_on:
@@ -22,11 +26,15 @@ services:
   db:
     image: mysql:8
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: login_db
-      MYSQL_USER: user
-      MYSQL_PASSWORD: password
+      MYSQL_DATABASE: $DB_DATABASE
+      MYSQL_USER: $DB_USERNAME
+      MYSQL_PASSWORD: $DB_PASSWORD
+      MYSQL_ROOT_PASSWORD: $DB_ROOT_PASSWORD
     volumes:
       - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
